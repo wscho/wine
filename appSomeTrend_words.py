@@ -245,7 +245,7 @@ def render_wordcloud(freq: Dict[str, float], *, font_path: Optional[str], color_
 # =============================
 
 st.set_page_config(page_title="썸트렌드 긍부정 워드클라우드", layout="wide")
-st.title("☁️ 썸트렌드 긍부정 워드클라우드 (전체/년도별)")
+st.title("☁️ 썸트렌드 긍부정 워드클라우드")
 
 with st.sidebar:
     st.header("데이터 소스")

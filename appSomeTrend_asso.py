@@ -140,10 +140,10 @@ def summarize_all_years(df: pd.DataFrame) -> pd.DataFrame:
     """
     tmp = df.groupby(["연관어", "카테고리 대분류"], as_index=False)["건수"].sum()
     tmp = tmp.sort_values(["연관어", "건수"], ascending=[True, False])
-    best_cat = tmp.drop_duplicates(subset=["연관어"], keep="first").copy()
-    total = df.groupby(["연관어"], as_index=False)["건수"].sum().rename(columns={"건수": "건수합"})
+    # 대표 카테고리만 남기고, 건수는 "연관어별 총합" 하나로 확정한다.
+    best_cat = tmp.drop_duplicates(subset=["연관어"], keep="first")[["연관어", "카테고리 대분류"]].copy()
+    total = df.groupby(["연관어"], as_index=False)["건수"].sum()
     out = best_cat.merge(total, on="연관어", how="left")
-    out = out.rename(columns={"건수합": "건수"})
     out["년도"] = -1
     return out[["연관어", "건수", "카테고리 대분류", "년도"]]
 
@@ -153,7 +153,7 @@ def summarize_all_years(df: pd.DataFrame) -> pd.DataFrame:
 # =============================
 
 st.set_page_config(page_title="썸트렌드 연관성 분석", layout="wide")
-st.title("🕸️ 썸트렌드 연관성 분석 (전체/년도별)")
+st.title("🕸️ 썸트렌드 연관성 분석")
 
 with st.sidebar:
     st.header("데이터 소스")

@@ -219,8 +219,8 @@ def plot_trend(df: pd.DataFrame, x_col: str, y_cols: List[str], title: str) -> g
 # Streamlit UI
 # =============================
 
-st.set_page_config(page_title="썸트렌드 언급량 트렌드(일/월/년)", layout="wide")
-st.title("📈 썸트렌드 언급량 트렌드 (일/월/년)")
+st.set_page_config(page_title="썸트렌드 언급량 트렌드", layout="wide")
+st.title("📈 썸트렌드 언급량 트렌드")
 
 with st.sidebar:
     st.header("데이터 소스")

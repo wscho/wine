@@ -206,7 +206,7 @@ def plot_trend(df: pd.DataFrame, x_col: str, y_cols: List[str], title: str) -> g
 # =============================
 
 st.set_page_config(page_title="Naver DataLab 트렌드", layout="wide")
-st.title("📈 Naver DataLab 트렌드 (일/월/년)")
+st.title("📈 Naver DataLab 트렌드 분석")
 
 with st.sidebar:
     st.header("데이터 소스")
