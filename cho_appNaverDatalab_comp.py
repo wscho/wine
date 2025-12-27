@@ -1,0 +1,282 @@
+import os
+import re
+import time
+from datetime import datetime
+from io import BytesIO
+from typing import Optional, List
+
+import pandas as pd
+import requests
+import streamlit as st
+import plotly.graph_objects as go
+
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+
+
+# =============================
+# Font (Korean)
+# =============================
+
+def configure_korean_font() -> Optional[str]:
+    direct_paths = [
+        r"C:\Windows\Fonts\malgun.ttf",
+        r"C:\Windows\Fonts\NanumGothic.ttf",
+        r"C:\Windows\Fonts\NotoSansCJKkr-Regular.otf",
+    ]
+    for p in direct_paths:
+        try:
+            if os.path.exists(p):
+                fm.fontManager.addfont(p)
+                prop = fm.FontProperties(fname=p)
+                name = prop.get_name()
+                plt.rcParams["font.family"] = name
+                plt.rcParams["axes.unicode_minus"] = False
+                return name
+        except Exception:
+            pass
+
+    candidates = ["Malgun Gothic", "NanumGothic", "Noto Sans CJK KR", "AppleGothic"]
+    available_names = {f.name for f in fm.fontManager.ttflist}
+    for name in candidates:
+        if name in available_names:
+            plt.rcParams["font.family"] = name
+            plt.rcParams["axes.unicode_minus"] = False
+            return name
+    return None
+
+
+_CHOSEN_FONT = configure_korean_font()
+
+
+# =============================
+# Google Sheets (XLSX download)
+# =============================
+
+DEFAULT_COMP_SHEET_URL = "https://docs.google.com/spreadsheets/d/1amDCFWC95S2dVImacl-41Uq9XYQr_fyD/edit?usp=sharing&ouid=112643056517438341912&rtpof=true&sd=true"
+
+
+def _extract_spreadsheet_id(url: str) -> str:
+    m = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", url)
+    if not m:
+        raise ValueError("구글 스프레드시트 URL에서 문서 ID를 추출할 수 없습니다.")
+    return m.group(1)
+
+
+def _xlsx_export_url(spreadsheet_id: str) -> str:
+    return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
+
+
+def _is_probably_html(resp: requests.Response) -> bool:
+    ctype = (resp.headers.get("Content-Type") or "").lower()
+    if "text/html" in ctype:
+        return True
+    head = resp.content[:200].lstrip().lower()
+    return head.startswith(b"<!doctype html") or head.startswith(b"<html")
+
+
+def download_with_retry(url: str, timeout_s: int = 30, retries: int = 3, backoff_s: float = 0.8) -> requests.Response:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+    }
+    last_exc: Optional[Exception] = None
+    for i in range(retries):
+        try:
+            resp = requests.get(url, headers=headers, timeout=timeout_s, allow_redirects=True)
+            resp.raise_for_status()
+            if _is_probably_html(resp):
+                raise ValueError("응답이 HTML입니다(권한/공개 설정 문제 가능).")
+            return resp
+        except Exception as e:
+            last_exc = e
+            time.sleep(backoff_s * (2**i))
+    raise RuntimeError(f"네트워크 요청 실패: {last_exc}")
+
+
+@st.cache_data(show_spinner=False)
+def fetch_xlsx_as_df_with_header(sheet_url: str, header_row_1based: int) -> pd.DataFrame:
+    sid = _extract_spreadsheet_id(sheet_url)
+    resp = download_with_retry(_xlsx_export_url(sid))
+    header0 = max(int(header_row_1based) - 1, 0)
+    with BytesIO(resp.content) as bio:
+        return pd.read_excel(bio, header=header0)
+
+
+# =============================
+# Data prep
+# =============================
+
+def _make_unique_columns(cols: List[str]) -> List[str]:
+    seen = {}
+    out = []
+    for c in cols:
+        name = str(c).strip()
+        if name == "" or name.lower() == "nan":
+            name = "컬럼"
+        if name not in seen:
+            seen[name] = 0
+            out.append(name)
+        else:
+            seen[name] += 1
+            out.append(f"{name}__{seen[name]}")
+    return out
+
+
+def normalize_naver_datalab_comp(df_raw: pd.DataFrame) -> pd.DataFrame:
+    """
+    시트 구조(예):
+    날짜 | 국내와인 | 날짜 | 외국와인 | 날짜 | 프랑스와인 | 날짜 | 이태리와인 | 날짜 | 칠레와인
+    - 7행: 필드명, 8행부터 데이터
+    """
+    if df_raw is None or df_raw.empty:
+        raise ValueError("시트 데이터가 비어 있습니다.")
+
+    df = df_raw.copy()
+    df.columns = _make_unique_columns([re.sub(r"\.\d+$", "", str(c)).strip() for c in df.columns])
+
+    expected_terms = ["국내와인", "외국와인", "프랑스와인", "이태리와인", "칠레와인"]
+
+    # 컬럼명이 깨지거나(로케일) 다르게 들어오면, 위치 기반으로 복구
+    if not all(c in df.columns for c in expected_terms):
+        if df.shape[1] >= 10:
+            pos_cols = [df.columns[1], df.columns[3], df.columns[5], df.columns[7], df.columns[9]]
+            tmp = df.loc[:, [df.columns[0]] + pos_cols].copy()
+            tmp.columns = ["날짜"] + expected_terms
+            df = tmp
+        else:
+            missing = [c for c in expected_terms if c not in df.columns]
+            raise ValueError(f"필수 컬럼을 찾지 못했습니다: {missing} (현재 컬럼 수: {df.shape[1]})")
+
+    date_col = "날짜" if "날짜" in df.columns else df.columns[0]
+    df = df.dropna(subset=[date_col]).copy()
+
+    s = df[date_col].astype(str).str.strip()
+    dt = pd.to_datetime(s, errors="coerce")
+    if dt.isna().all():
+        dt = pd.to_datetime(s, errors="coerce", format="%Y.%m.%d")
+    df = df[dt.notna()].copy()
+    df["날짜"] = dt[dt.notna()].dt.date.astype(str)
+
+    for c in expected_terms:
+        if isinstance(df[c], pd.DataFrame):
+            df[c] = df[c].iloc[:, 0]
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
+
+    keep = ["날짜"] + expected_terms
+    df = df.loc[:, keep].copy()
+    df = df.sort_values("날짜")
+    return df
+
+
+def aggregate(df: pd.DataFrame, freq: str) -> pd.DataFrame:
+    out = df.copy()
+    out["날짜_dt"] = pd.to_datetime(out["날짜"], errors="coerce")
+    out = out[out["날짜_dt"].notna()].copy()
+
+    numeric_cols = [c for c in out.columns if c not in {"날짜", "날짜_dt"}]
+    for c in numeric_cols:
+        out[c] = pd.to_numeric(out[c], errors="coerce").fillna(0.0)
+
+    if freq == "M":
+        out["기간"] = out["날짜_dt"].dt.to_period("M").astype(str)
+    elif freq == "Y":
+        out["기간"] = out["날짜_dt"].dt.year.astype(int).astype(str)
+    else:
+        raise ValueError("freq는 'M','Y' 중 하나여야 합니다.")
+
+    g = out.groupby("기간", as_index=False)[numeric_cols].sum()
+    cols = ["기간"] + numeric_cols
+    return g.loc[:, cols].copy()
+
+
+def plot_trend(df: pd.DataFrame, x_col: str, y_cols: List[str], title: str) -> go.Figure:
+    fig = go.Figure()
+    for c in y_cols:
+        fig.add_trace(
+            go.Scatter(
+                x=df[x_col],
+                y=df[c],
+                mode="lines+markers",
+                name=c,
+                line=dict(width=3),
+                marker=dict(size=5),
+            )
+        )
+    fig.update_layout(
+        title=title,
+        height=520,
+        margin=dict(l=30, r=20, t=60, b=40),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        font=dict(family=_CHOSEN_FONT or "Malgun Gothic", size=14),
+    )
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.08)")
+    return fig
+
+
+# =============================
+# Streamlit UI
+# =============================
+
+st.set_page_config(page_title="Naver DataLab 비교 트렌드", layout="wide")
+st.title("📊 Naver DataLab 비교 트렌드 (월/년)")
+st.caption("국내와인, 외국와인, 프랑스와인, 이태리와인, 칠레와인")
+
+with st.sidebar:
+    st.header("데이터 소스")
+    sheet_url = st.text_input("구글시트 URL", value=DEFAULT_COMP_SHEET_URL)
+    st.caption("공개/공유 설정이 '링크가 있는 모든 사용자 보기 가능'이어야 합니다.")
+    st.caption("이 시트는 7행이 헤더, 8행부터 실제 데이터입니다.")
+    st.divider()
+
+    st.header("시각화 설정")
+    st.caption(f"한글 폰트: {_CHOSEN_FONT or '감지 실패(깨짐 시 맑은 고딕/나눔고딕 설치 필요)'}")
+
+
+@st.cache_data(show_spinner=True)
+def load_and_prepare_comp(url: str) -> pd.DataFrame:
+    raw = fetch_xlsx_as_df_with_header(url, header_row_1based=7)
+    return normalize_naver_datalab_comp(raw)
+
+
+try:
+    df = load_and_prepare_comp(sheet_url)
+except Exception as e:
+    st.error(f"구글시트 데이터를 불러오지 못했습니다: {e}")
+    st.stop()
+
+st.caption(f"업데이트됨: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+numeric_candidates = [c for c in df.columns if c != "날짜"]
+default_terms = ["국내와인", "외국와인", "프랑스와인", "이태리와인", "칠레와인"]
+
+with st.sidebar:
+    y_cols = st.multiselect(
+        "표시할 키워드(복수 선택)",
+        options=numeric_candidates,
+        default=[c for c in default_terms if c in numeric_candidates] or numeric_candidates,
+    )
+
+if not y_cols:
+    st.warning("표시할 키워드를 1개 이상 선택하세요.")
+    st.stop()
+
+tab_m, tab_y = st.tabs(["월별", "년도별"])
+
+with tab_m:
+    st.subheader("월별 언급량 트렌드")
+    df_m = aggregate(df, "M")
+    fig = plot_trend(df_m, "기간", y_cols, "월별 트렌드 (비교)")
+    st.plotly_chart(fig, use_container_width=True)
+    with st.expander("데이터 보기"):
+        st.dataframe(df_m, use_container_width=True, height=360)
+
+with tab_y:
+    st.subheader("년도별 언급량 트렌드")
+    df_y = aggregate(df, "Y")
+    fig = plot_trend(df_y, "기간", y_cols, "년도별 트렌드 (비교)")
+    st.plotly_chart(fig, use_container_width=True)
+    with st.expander("데이터 보기"):
+        st.dataframe(df_y, use_container_width=True, height=360)
+
+

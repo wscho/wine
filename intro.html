@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>영동와인 | 대한민국 와인의 수도</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+      color: #2c2c2c;
+      line-height: 1.7;
+      background-color: #fafafa;
+    }
+
+    header {
+      /* Streamlit 배포 환경에는 로컬 이미지(hero_wine.jpg)가 없을 수 있어 기본 그라데이션으로 처리 */
+      background: linear-gradient(135deg, rgba(122,31,43,0.95), rgba(0,0,0,0.65));
+      color: #fff;
+      padding: 120px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .hero-text {
+      text-align: left;
+    }
+
+    .hero-center-word {
+      display: block;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .hero-sub {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .hero-credit {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.86);
+      letter-spacing: 0.2px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(6px);
+      user-select: none;
+    }
+
+    header h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.3rem;
+      opacity: 0.9;
+    }
+
+    .hero-art {
+      display: flex;
+      justify-content: center;
+    }
+
+    .art-box {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+      padding: 18px;
+      box-sizing: border-box;
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .art-box svg {
+      width: 100%;
+      height: 100%;
+      max-height: 220px;
+    }
+
+    @media (max-width: 900px) {
+      header { padding: 80px 18px; }
+      .hero-wrap { grid-template-columns: 1fr; text-align: center; }
+      .hero-text { text-align: center; }
+      .art-box { max-width: 520px; }
+      .hero-credit {
+        position: static;
+        display: inline-block;
+        margin-top: 14px;
+      }
+    }
+
+    section {
+      max-width: 1100px;
+      margin: 80px auto;
+      padding: 0 20px;
+    }
+
+    section h2 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      border-left: 6px solid #7a1f2b;
+      padding-left: 14px;
+    }
+
+    section h3 {
+      font-size: 1.4rem;
+      margin-top: 30px;
+      color: #7a1f2b;
+    }
+
+    .highlight {
+      font-weight: bold;
+      color: #7a1f2b;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 14px;
+      text-align: center;
+    }
+
+    table th {
+      background-color: #7a1f2b;
+      color: #fff;
+    }
+
+    .quote {
+      background-color: #f3f3f3;
+      padding: 40px;
+      margin: 80px auto;
+      max-width: 900px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-style: italic;
+      border-left: 6px solid #7a1f2b;
+    }
+
+    footer {
+      background-color: #2c2c2c;
+      color: #eee;
+      padding: 50px 20px;
+      text-align: center;
+    }
+
+    footer p {
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="hero-wrap">
+    <div class="hero-text">
+      <h1>🍷 대한민국 와인의 수도,<span class="hero-center-word">영동와인</span></h1>
+      <p class="hero-sub">한국 와인의 기준을 세우다</p>
+    </div>
+
+    <!-- 사각형 박스 안 포도 + 와인 일러스트(SVG, 외부 파일 불필요) -->
+    <div class="hero-art">
+      <div class="art-box" aria-label="포도와 와인 일러스트">
+        <svg viewBox="0 0 860 540" xmlns="http://www.w3.org/2000/svg" role="img">
+          <defs>
+            <linearGradient id="glass" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+            </linearGradient>
+            <linearGradient id="wine" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#b61f3a" stop-opacity="0.95"/>
+              <stop offset="1" stop-color="#7a1f2b" stop-opacity="0.95"/>
+            </linearGradient>
+            <radialGradient id="grape" cx="35%" cy="35%" r="70%">
+              <stop offset="0" stop-color="#b78bff"/>
+              <stop offset="0.55" stop-color="#7b42ff"/>
+              <stop offset="1" stop-color="#3a1a8a"/>
+            </radialGradient>
+            <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
+            </filter>
+          </defs>
+
+          <!-- subtle background blobs -->
+          <g opacity="0.22">
+            <circle cx="170" cy="150" r="120" fill="#ffffff"/>
+            <circle cx="710" cy="120" r="160" fill="#ffffff"/>
+            <circle cx="680" cy="420" r="140" fill="#ffffff"/>
+          </g>
+
+          <!-- grapes -->
+          <g filter="url(#softShadow)">
+            <path d="M215 170 C250 120, 325 115, 360 160 C300 155, 270 175, 215 170 Z" fill="#2f7a3f" opacity="0.9"/>
+            <path d="M285 120 C295 80, 320 60, 360 50" stroke="#2f7a3f" stroke-width="16" stroke-linecap="round"/>
+
+            <g>
+              <circle cx="210" cy="250" r="52" fill="url(#grape)"/>
+              <circle cx="275" cy="232" r="54" fill="url(#grape)"/>
+              <circle cx="340" cy="255" r="56" fill="url(#grape)"/>
+              <circle cx="240" cy="310" r="56" fill="url(#grape)"/>
+              <circle cx="305" cy="320" r="58" fill="url(#grape)"/>
+              <circle cx="365" cy="320" r="52" fill="url(#grape)"/>
+              <circle cx="275" cy="385" r="58" fill="url(#grape)"/>
+              <circle cx="340" cy="400" r="56" fill="url(#grape)"/>
+            </g>
+
+            <!-- highlights -->
+            <g opacity="0.25">
+              <ellipse cx="245" cy="220" rx="18" ry="12" fill="#ffffff"/>
+              <ellipse cx="310" cy="245" rx="18" ry="12" fill="#ffffff"/>
+              <ellipse cx="330" cy="350" rx="20" ry="14" fill="#ffffff"/>
+            </g>
+          </g>
+
+          <!-- wine glass -->
+          <g transform="translate(420,55)" filter="url(#softShadow)">
+            <!-- bowl outline -->
+            <path d="M170 40
+                     C235 70, 270 135, 260 220
+                     C252 300, 214 345, 170 365
+                     C126 345, 88 300, 80 220
+                     C70 135, 105 70, 170 40 Z"
+                  fill="url(#glass)" stroke="rgba(255,255,255,0.55)" stroke-width="10" />
+
+            <!-- wine -->
+            <path d="M98 210
+                     C120 260, 145 292, 170 302
+                     C195 292, 220 260, 242 210
+                     C240 280, 215 328, 170 348
+                     C125 328, 100 280, 98 210 Z"
+                  fill="url(#wine)" opacity="0.92"/>
+
+            <!-- rim shine -->
+            <path d="M125 72 C165 56, 205 56, 245 72" stroke="rgba(255,255,255,0.55)" stroke-width="10" stroke-linecap="round" fill="none"/>
+            <path d="M120 120 C110 160, 112 210, 125 255" stroke="rgba(255,255,255,0.25)" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+            <!-- stem & base -->
+            <path d="M170 365 L170 445" stroke="rgba(255,255,255,0.65)" stroke-width="14" stroke-linecap="round"/>
+            <path d="M110 460 C145 442, 195 442, 230 460" stroke="rgba(255,255,255,0.65)" stroke-width="14" stroke-linecap="round" fill="none"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-credit">유원대학교 RISE 사업단</div>
+</header>
+
+<section>
+  <h2>1. 소개 – 한국 와인의 기준을 세우다</h2>
+  <p>
+    충청북도 영동은 대한민국 포도 재배의 중심지이자, 한국 와인 산업의 출발점입니다.
+    일교차가 큰 기후, 비옥한 토양, 그리고 수십 년간 축적된 포도 재배 기술은
+    영동을 <span class="highlight">‘한국 와인의 수도’</span>로 자리매김하게 했습니다.
+  </p>
+  <p>
+    영동와인은 단순한 지역 특산주가 아닙니다.
+    지역 농부의 손길, 토착 포도의 개성, 그리고 현대적인 양조 기술이 결합된
+    <span class="highlight">‘한국형 테루아(Terroir) 와인’</span>입니다.
+    영동와인은 지금, 한국 와인의 가능성을 세계에 증명하고 있습니다.
+  </p>
+</section>
+
+<section>
+  <h2>2. 영동와인의 특성 – 한국 테루아의 정수</h2>
+
+  <h3>🍇 독보적인 기후와 토양</h3>
+  <ul>
+    <li>연평균 일교차가 큼 → 향기 성분(아로마) 발달</li>
+    <li>배수가 우수한 구릉지 토양 → 당도와 산도의 균형</li>
+    <li>여름 강수 이후 맑은 가을 → 포도 완숙에 최적</li>
+  </ul>
+
+  <h3>🍷 한국 토착 포도의 강점</h3>
+  <ul>
+    <li>캠벨얼리, 거봉 등 한국 소비자에게 익숙한 품종</li>
+    <li>은은한 과실향과 부드러운 산미</li>
+    <li>낮은 타닌감 → 와인 초심자에게도 친숙</li>
+    <li>한식과 뛰어난 페어링</li>
+  </ul>
+
+  <h3>🧑‍🌾 소규모·장인형 와이너리</h3>
+  <ul>
+    <li>대량 생산보다 품질과 개성 중심</li>
+    <li>양조가의 철학이 담긴 스토리 있는 와인</li>
+    <li>빈티지별 개성이 살아있는 와인</li>
+  </ul>
+</section>
+
+<section>
+  <h2>3. 영동와인 현황 – 성장하는 한국 와인 산업의 중심</h2>
+  <ul>
+    <li>국내 최대 와인 특구 (영동군 와인산업특구)</li>
+    <li>다수의 중소 와이너리 운영 (농가형·체험형 중심)</li>
+    <li>전국 및 국제 품평회 수상 이력 증가</li>
+    <li>와인 관광·체험·교육이 결합된 6차 산업 모델</li>
+  </ul>
+
+  <p>
+    영동와인은 현재<br/>
+    ✔ 전통주 시장을 넘어<br/>
+    ✔ 프리미엄 로컬 와인으로<br/>
+    ✔ K-푸드와 결합한 수출 전략 상품으로<br/>
+    진화하고 있습니다.
+  </p>
+</section>
+
+<section>
+  <h2>4. 영동와인 & 푸드 페어링</h2>
+  <p>
+    영동와인의 가장 큰 경쟁력은 <span class="highlight">한식과의 궁합</span>입니다.
+  </p>
+
+  <table>
+    <tr>
+      <th>한식 메뉴</th>
+      <th>추천 영동와인</th>
+    </tr>
+    <tr>
+      <td>불고기·갈비</td>
+      <td>미디엄 바디 레드</td>
+    </tr>
+    <tr>
+      <td>전·부침</td>
+      <td>드라이 화이트</td>
+    </tr>
+    <tr>
+      <td>매콤한 한식</td>
+      <td>세미스위트 로제</td>
+    </tr>
+    <tr>
+      <td>한정식</td>
+      <td>캠벨얼리 레드</td>
+    </tr>
+  </table>
+
+  <p>
+    👉 “와인은 서양 음식과만 어울린다”는 고정관념을 깨는 <b>K-와인 정체성</b>
+  </p>
+</section>
+
+<section>
+  <h2>5. 와인 투어리즘 – 경험하는 와인</h2>
+  <ul>
+    <li>포도밭 투어 & 수확 체험</li>
+    <li>와이너리 시음 프로그램</li>
+    <li>영동 와인 축제 연계</li>
+    <li>가족·청년·외국인 맞춤 코스</li>
+  </ul>
+  <p><b>영동와인은 마시는 와인이 아니라, 경험하는 와인입니다.</b></p>
+</section>
+
+<section>
+  <h2>6. 지속가능한 와인 – 로컬 & ESG</h2>
+  <ul>
+    <li>지역 농가 소득 안정</li>
+    <li>저탄소 로컬 생산·소비</li>
+    <li>청년 농부·귀농 연계</li>
+    <li>전통 농업과 현대 기술의 공존</li>
+  </ul>
+  <p>👉 지속가능성은 영동와인의 미래 경쟁력입니다.</p>
+</section>
+
+<section>
+  <h2>7. 미래 비전 – 세계로 향하는 K-Wine</h2>
+  <ul>
+    <li>국제 품평회 지속 참가</li>
+    <li>외국인 관광객 대상 K-와인 브랜딩</li>
+    <li>K-푸드·K-컬처와 결합한 글로벌 마케팅</li>
+    <li>데이터 기반 품질 관리와 스마트 양조</li>
+  </ul>
+  <p><b>영동와인 = 한국 와인의 표준</b></p>
+</section>
+
+<div class="quote">
+  “포도는 땅을 기억하고,<br/>
+  와인은 사람을 담습니다.”
+</div>
+
+<footer>
+  <p>영동에서 자란 포도</p>
+  <p>영동 사람이 빚은 와인</p>
+  <p><b>영동와인</b></p>
+</footer>
+
+</body>
+</html>
