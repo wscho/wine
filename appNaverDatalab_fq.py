@@ -15,40 +15,14 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 
+from korean_font import configure_korean_font
+from web_fonts import inject_noto_sans_kr
+
 
 # =============================
 # Font (Korean)
 # =============================
-
-def configure_korean_font() -> Optional[str]:
-    direct_paths = [
-        r"C:\Windows\Fonts\malgun.ttf",
-        r"C:\Windows\Fonts\NanumGothic.ttf",
-        r"C:\Windows\Fonts\NotoSansCJKkr-Regular.otf",
-    ]
-    for p in direct_paths:
-        try:
-            if os.path.exists(p):
-                fm.fontManager.addfont(p)
-                prop = fm.FontProperties(fname=p)
-                name = prop.get_name()
-                plt.rcParams["font.family"] = name
-                plt.rcParams["axes.unicode_minus"] = False
-                return name
-        except Exception:
-            pass
-
-    candidates = ["Malgun Gothic", "NanumGothic", "Noto Sans CJK KR", "AppleGothic"]
-    available_names = {f.name for f in fm.fontManager.ttflist}
-    for name in candidates:
-        if name in available_names:
-            plt.rcParams["font.family"] = name
-            plt.rcParams["axes.unicode_minus"] = False
-            return name
-    return None
-
-
-_CHOSEN_FONT = configure_korean_font()
+_CHOSEN_FONT = configure_korean_font().name
 
 
 # =============================
@@ -283,6 +257,7 @@ def plot_trend(df: pd.DataFrame, x_col: str, y_cols: List[str], title: str) -> g
 # =============================
 
 st.set_page_config(page_title="영동와인 빅데이터(트렌드)_NaverDatalab", layout="wide")
+inject_noto_sans_kr()
 st.title("📈 Naver DataLab 트렌드 분석")
 
 with st.sidebar:

@@ -15,67 +15,26 @@ import matplotlib.font_manager as fm
 from PIL import Image, ImageChops
 from wordcloud import WordCloud
 
+from korean_font import configure_korean_font
+from web_fonts import inject_noto_sans_kr
+
 
 # =============================
 # Font (Korean)
 # =============================
 
-_KOREAN_FONT_NAME: Optional[str] = None
-_KOREAN_FONT_PATH: Optional[str] = None
-_KOREAN_FONT_BOLD_PATH: Optional[str] = None
-
-
-def configure_korean_font() -> Optional[str]:
-    global _KOREAN_FONT_NAME, _KOREAN_FONT_PATH, _KOREAN_FONT_BOLD_PATH
-
-    direct_paths = [
-        r"C:\Windows\Fonts\malgun.ttf",
-        r"C:\Windows\Fonts\malgunbd.ttf",
-        r"C:\Windows\Fonts\NanumGothic.ttf",
-        r"C:\Windows\Fonts\NanumGothicBold.ttf",
-        r"C:\Windows\Fonts\NotoSansCJKkr-Regular.otf",
-    ]
-    for p in direct_paths:
-        try:
-            if os.path.exists(p):
-                fm.fontManager.addfont(p)
-                prop = fm.FontProperties(fname=p)
-                name = prop.get_name()
-                plt.rcParams["font.family"] = name
-                plt.rcParams["axes.unicode_minus"] = False
-                _KOREAN_FONT_NAME = name
-                if os.path.basename(p).lower() in {"malgunbd.ttf", "nanumgothicbold.ttf"}:
-                    _KOREAN_FONT_BOLD_PATH = p
-                else:
-                    _KOREAN_FONT_PATH = p
-                return name
-        except Exception:
-            pass
-
-    candidates = ["Malgun Gothic", "NanumGothic", "Noto Sans CJK KR", "AppleGothic"]
-    available_names = {f.name for f in fm.fontManager.ttflist}
-    for name in candidates:
-        if name in available_names:
-            plt.rcParams["font.family"] = name
-            plt.rcParams["axes.unicode_minus"] = False
-            _KOREAN_FONT_NAME = name
-            return name
-
-    return None
+_font_info = configure_korean_font()
+_KOREAN_FONT_NAME: Optional[str] = _font_info.name
+_KOREAN_FONT_PATH: Optional[str] = _font_info.regular_path
+_KOREAN_FONT_BOLD_PATH: Optional[str] = _font_info.bold_path
 
 
 def pick_bold_font_path() -> Optional[str]:
-    candidates = [
-        r"C:\Windows\Fonts\malgunbd.ttf",
-        r"C:\Windows\Fonts\NanumGothicBold.ttf",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
+    # 배포 환경에서는 repo-local 폰트를 우선 사용
     return _KOREAN_FONT_BOLD_PATH or _KOREAN_FONT_PATH
 
 
-_CHOSEN_FONT = configure_korean_font()
+_CHOSEN_FONT = _KOREAN_FONT_NAME
 
 
 # =============================
@@ -245,6 +204,7 @@ def render_wordcloud(freq: Dict[str, float], *, font_path: Optional[str], color_
 # =============================
 
 st.set_page_config(page_title="썸트렌드 긍부정 워드클라우드", layout="wide")
+inject_noto_sans_kr()
 st.title("☁️ 썸트렌드 긍부정 워드클라우드")
 
 with st.sidebar:

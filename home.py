@@ -9,8 +9,11 @@ import streamlit.components.v1 as components
 import pandas as pd
 import requests
 
+from web_fonts import inject_noto_sans_kr
+
 
 st.set_page_config(page_title="영동와인 빅데이터 홈", layout="wide")
+inject_noto_sans_kr()
 
 st.title("🍷 영동와인 빅데이터 홈페이지")
 st.caption("좌측 사이드바에서 원하는 분석 페이지를 선택하세요.")

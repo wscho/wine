@@ -16,6 +16,9 @@ import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
 import networkx as nx
 
+from korean_font import configure_korean_font
+from web_fonts import inject_noto_sans_kr
+
 
 # =============================
 # Font (Korean)
@@ -23,40 +26,9 @@ import networkx as nx
 
 _KOREAN_FONT_PROP: Optional[fm.FontProperties] = None
 
-
-def configure_korean_font() -> Optional[str]:
-    global _KOREAN_FONT_PROP
-    direct_paths = [
-        r"C:\Windows\Fonts\malgun.ttf",
-        r"C:\Windows\Fonts\NanumGothic.ttf",
-        r"C:\Windows\Fonts\NotoSansCJKkr-Regular.otf",
-    ]
-    for p in direct_paths:
-        try:
-            if os.path.exists(p):
-                fm.fontManager.addfont(p)
-                prop = fm.FontProperties(fname=p)
-                name = prop.get_name()
-                plt.rcParams["font.family"] = name
-                plt.rcParams["axes.unicode_minus"] = False
-                _KOREAN_FONT_PROP = prop
-                return name
-        except Exception:
-            pass
-
-    candidates = ["Malgun Gothic", "NanumGothic", "Noto Sans CJK KR", "AppleGothic"]
-    available_names = {f.name for f in fm.fontManager.ttflist}
-    for name in candidates:
-        if name in available_names:
-            plt.rcParams["font.family"] = name
-            plt.rcParams["axes.unicode_minus"] = False
-            _KOREAN_FONT_PROP = fm.FontProperties(family=name)
-            return name
-
-    return None
-
-
-_CHOSEN_FONT = configure_korean_font()
+_font_info = configure_korean_font()
+_CHOSEN_FONT = _font_info.name
+_KOREAN_FONT_PROP = _font_info.prop
 
 
 # =============================
@@ -153,6 +125,7 @@ def summarize_all_years(df: pd.DataFrame) -> pd.DataFrame:
 # =============================
 
 st.set_page_config(page_title="썸트렌드 연관성 분석", layout="wide")
+inject_noto_sans_kr()
 st.title("🕸️ 썸트렌드 연관성 분석")
 
 with st.sidebar:
