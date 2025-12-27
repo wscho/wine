@@ -226,20 +226,20 @@ edge_w = [0.6 + 3.2 * (w / max_w) for w in weights]
 
 # 선명도 개선:
 # - 기본은 SVG(벡터)로 렌더링해 확대/축소 시에도 글자가 선명하도록 표시
-# - SVG 실패 시 고DPI PNG로 fallback
-FIG_DPI = 320
+# - SVG 실패 시 더 높은 DPI PNG로 fallback
+FIG_DPI = 480
 fig, ax = plt.subplots(figsize=(18, 10), facecolor="white", dpi=FIG_DPI)
 ax.set_facecolor("white")
 ax.axis("off")
 
-nx.draw_networkx_edges(G, pos, ax=ax, width=edge_w, alpha=0.14, edge_color="#9aa0a6")
+nx.draw_networkx_edges(G, pos, ax=ax, width=edge_w, alpha=0.08, edge_color="#9aa0a6")
 nx.draw_networkx_nodes(
     G,
     pos,
     ax=ax,
     node_color=node_colors,
     node_size=node_sizes,
-    linewidths=1.2,
+    linewidths=1.4,
     edgecolors="#4a4a4a",
 )
 
@@ -254,13 +254,18 @@ for n, (x, y) in pos.items():
         va="center",
         # 가독성 개선: 라벨 크기 2배 + 볼드 + 검정색
         # 요청: 기존 대비 약 20% 축소
-        fontsize=26 if is_center else 18,
+        # 요청: sometrend asso 그래프의 모든 글자 30% 축소(= 0.7배)
+        fontsize=18 if is_center else 13,
         fontweight="bold",
         # 요청: 글자색을 진한 파란색으로
         color="#0B1F66",
         fontproperties=font_prop,
-        # 배경/엣지와 겹쳐도 선명하게 보이도록 흰색 외곽선 추가
-        path_effects=[pe.withStroke(linewidth=4.0 if is_center else 3.4, foreground="white")],
+        # 배경/엣지와 겹쳐도 선명하게 보이도록 흰색 외곽선 + 본문을 분리(Stroke + Normal)
+        # withStroke()보다 경계가 또렷하게 보이는 경우가 많음
+        path_effects=[
+            pe.Stroke(linewidth=2.8 if is_center else 2.4, foreground="white"),
+            pe.Normal(),
+        ],
         zorder=10,
     )
 
@@ -278,9 +283,9 @@ if handles:
     # 범례 텍스트도 볼드로 (가독성)
     leg = ax.get_legend()
     if leg is not None:
-        # 범례 글씨 크기 1/2 정도 확대(= 약 1.5배)
-        legend_fs = 18
-        legend_title_fs = 20
+        # 요청: 그래프의 모든 글자 30% 축소(= 0.7배)
+        legend_fs = 13
+        legend_title_fs = 14
         for t in leg.get_texts():
             t.set_fontweight("bold")
             t.set_fontsize(legend_fs)
@@ -288,7 +293,7 @@ if handles:
             leg.get_title().set_fontweight("bold")
             leg.get_title().set_fontsize(legend_title_fs)
 
-ax.set_title(f"{title_year} K-Wine 연관어 네트워크", fontsize=18, fontweight="bold", pad=15, color="#0B1F66")
+ax.set_title(f"{title_year} K-Wine 연관어 네트워크", fontsize=13, fontweight="bold", pad=15, color="#0B1F66")
 plt.tight_layout()
 _orig_svg_fonttype = mpl.rcParams.get("svg.fonttype", "path")
 try:
@@ -298,6 +303,10 @@ try:
         fig.savefig(bio, format="svg", facecolor="white", bbox_inches="tight", pad_inches=0.2)
         svg = bio.getvalue().decode("utf-8", errors="ignore")
     components.html(
+        "<style>"
+        "svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision;}"
+        "path{shape-rendering:geometricPrecision;}"
+        "</style>"
         f"<div style='width:100%; overflow:auto'>{svg}</div>",
         height=760,
         scrolling=True,
@@ -307,7 +316,7 @@ except Exception:
     with BytesIO() as bio:
         fig.savefig(bio, format="png", dpi=FIG_DPI, facecolor="white", bbox_inches="tight", pad_inches=0.2)
         bio.seek(0)
-        st.image(bio.getvalue(), width="stretch")
+        st.image(bio.getvalue(), use_container_width=True)
 finally:
     try:
         mpl.rcParams["svg.fonttype"] = _orig_svg_fonttype
@@ -316,6 +325,6 @@ finally:
 plt.close(fig)
 
 with st.expander("원본/필터 데이터 보기"):
-    st.dataframe(df_view.reset_index(drop=True), width="stretch", height=380)
+    st.dataframe(df_view.reset_index(drop=True), use_container_width=True, height=380)
 
 

@@ -283,9 +283,9 @@ for sent in sent_order:
     )
     st.subheader(f"{title_year} {sent} ({len(freq)}개)")
     # 세로 배치 + 크게 보이도록 컨테이너 폭에 맞춰 표시
-    st.image(img, width="stretch")
+    st.image(img, use_container_width=True)
 
 with st.expander("데이터 보기(필터 적용 후)"):
-    st.dataframe(df_y.reset_index(drop=True), width="stretch", height=420)
+    st.dataframe(df_y.reset_index(drop=True), use_container_width=True, height=420)
 
 
