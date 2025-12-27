@@ -10,9 +10,11 @@ import numpy as np
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+import matplotlib as mpl
 import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
 import networkx as nx
@@ -208,7 +210,8 @@ max_cnt = max([d.get("count", 1.0) for n, d in G.nodes(data=True) if n != center
 
 for n, d in G.nodes(data=True):
     if n == center:
-        node_colors.append("#1f1f1f")
+        # 중앙 노드는 라벨을 "검정"으로 쓰기 위해 배경을 밝게
+        node_colors.append("#ffffff")
         node_sizes.append(3200 * float(node_mul))
         labels[n] = n
     else:
@@ -221,11 +224,15 @@ weights = [float(G[u][v].get("weight", 1.0)) for u, v in G.edges()]
 max_w = max(weights) if weights else 1.0
 edge_w = [0.6 + 3.2 * (w / max_w) for w in weights]
 
-fig, ax = plt.subplots(figsize=(18, 10), facecolor="white")
+# 선명도 개선:
+# - 기본은 SVG(벡터)로 렌더링해 확대/축소 시에도 글자가 선명하도록 표시
+# - SVG 실패 시 고DPI PNG로 fallback
+FIG_DPI = 320
+fig, ax = plt.subplots(figsize=(18, 10), facecolor="white", dpi=FIG_DPI)
 ax.set_facecolor("white")
 ax.axis("off")
 
-nx.draw_networkx_edges(G, pos, ax=ax, width=edge_w, alpha=0.22, edge_color="#9aa0a6")
+nx.draw_networkx_edges(G, pos, ax=ax, width=edge_w, alpha=0.14, edge_color="#9aa0a6")
 nx.draw_networkx_nodes(
     G,
     pos,
@@ -245,13 +252,16 @@ for n, (x, y) in pos.items():
         labels.get(n, n),
         ha="center",
         va="center",
-        fontsize=16 if is_center else 11,
-        fontweight="bold" if is_center else "normal",
-        color="white" if is_center else "#111111",
+        # 가독성 개선: 라벨 크기 2배 + 볼드 + 검정색
+        # 요청: 기존 대비 약 20% 축소
+        fontsize=26 if is_center else 18,
+        fontweight="bold",
+        # 요청: 글자색을 진한 파란색으로
+        color="#0B1F66",
         fontproperties=font_prop,
-        path_effects=[
-            pe.withStroke(linewidth=3.5, foreground="black") if is_center else pe.withStroke(linewidth=3.0, foreground="white")
-        ],
+        # 배경/엣지와 겹쳐도 선명하게 보이도록 흰색 외곽선 추가
+        path_effects=[pe.withStroke(linewidth=4.0 if is_center else 3.4, foreground="white")],
+        zorder=10,
     )
 
 handles = [mpatches.Patch(color=cmap[cat], label=cat) for cat in cats]
@@ -265,13 +275,47 @@ if handles:
         edgecolor="#dddddd",
         framealpha=0.95,
     )
+    # 범례 텍스트도 볼드로 (가독성)
+    leg = ax.get_legend()
+    if leg is not None:
+        # 범례 글씨 크기 1/2 정도 확대(= 약 1.5배)
+        legend_fs = 18
+        legend_title_fs = 20
+        for t in leg.get_texts():
+            t.set_fontweight("bold")
+            t.set_fontsize(legend_fs)
+        if leg.get_title() is not None:
+            leg.get_title().set_fontweight("bold")
+            leg.get_title().set_fontsize(legend_title_fs)
 
-ax.set_title(f"{title_year} K-Wine 연관어 네트워크", fontsize=18, fontweight="bold", pad=15)
+ax.set_title(f"{title_year} K-Wine 연관어 네트워크", fontsize=18, fontweight="bold", pad=15, color="#0B1F66")
 plt.tight_layout()
-st.pyplot(fig)
+_orig_svg_fonttype = mpl.rcParams.get("svg.fonttype", "path")
+try:
+    # SVG에서 폰트 문제를 피하려고 텍스트를 path로 변환(클라이언트에 폰트가 없어도 깨지지 않음)
+    mpl.rcParams["svg.fonttype"] = "path"
+    with BytesIO() as bio:
+        fig.savefig(bio, format="svg", facecolor="white", bbox_inches="tight", pad_inches=0.2)
+        svg = bio.getvalue().decode("utf-8", errors="ignore")
+    components.html(
+        f"<div style='width:100%; overflow:auto'>{svg}</div>",
+        height=760,
+        scrolling=True,
+    )
+except Exception:
+    # fallback: 고DPI PNG
+    with BytesIO() as bio:
+        fig.savefig(bio, format="png", dpi=FIG_DPI, facecolor="white", bbox_inches="tight", pad_inches=0.2)
+        bio.seek(0)
+        st.image(bio.getvalue(), width="stretch")
+finally:
+    try:
+        mpl.rcParams["svg.fonttype"] = _orig_svg_fonttype
+    except Exception:
+        pass
 plt.close(fig)
 
 with st.expander("원본/필터 데이터 보기"):
-    st.dataframe(df_view.reset_index(drop=True), use_container_width=True, height=380)
+    st.dataframe(df_view.reset_index(drop=True), width="stretch", height=380)
 
 

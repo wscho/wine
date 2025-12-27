@@ -223,8 +223,9 @@ with st.sidebar:
     st.header("워드클라우드 설정")
     top_n = st.slider("단어 수(Top N)", 10, 200, 80, 5)
     include_count = st.checkbox("단어 옆에 건수 표시(예: 단어(23))", value=True)
-    wc_width = st.slider("가로(width)", 600, 2400, 1400, 50)
-    wc_height = st.slider("세로(height)", 400, 1600, 700, 50)
+    # 300% 정도 크게 보이도록 기본 캔버스 크기를 3배로 상향(배포/로컬 모두 적용)
+    wc_width = st.slider("가로(width)", 600, 6000, 4200, 100)
+    wc_height = st.slider("세로(height)", 400, 4000, 2100, 100)
     wc_scale = st.slider("선명도(scale)", 1, 5, 2, 1)
     wc_max_words = st.slider("max_words", 20, 400, 200, 10)
 
@@ -264,12 +265,11 @@ if not font_path:
     st.markdown(korean_font_help_markdown())
     st.stop()
 
-# 감성별 색상(긍정은 더 연하게)
-colors = {"긍정": "#9BE7A5", "부정": "#FF6B6B", "중립": "#B0B0B0"}
+# 감성별 색상(가독성 향상: 더 진한 색상 사용)
+colors = {"긍정": "#15803D", "부정": "#B91C1C", "중립": "#374151"}
 sent_order = ["긍정", "부정", "중립"]
 
-cols = st.columns(3)
-for i, sent in enumerate(sent_order):
+for sent in sent_order:
     dff = df_y[df_y["감성"] == sent].copy()
     freq = build_freq_dict(dff, include_count_in_label=include_count, top_n=int(top_n))
     img = render_wordcloud(
@@ -281,11 +281,11 @@ for i, sent in enumerate(sent_order):
         max_words=int(wc_max_words),
         scale=int(wc_scale),
     )
-    with cols[i]:
-        st.subheader(f"{title_year} {sent} ({len(freq)}개)")
-        st.image(img, use_container_width=True)
+    st.subheader(f"{title_year} {sent} ({len(freq)}개)")
+    # 세로 배치 + 크게 보이도록 컨테이너 폭에 맞춰 표시
+    st.image(img, width="stretch")
 
 with st.expander("데이터 보기(필터 적용 후)"):
-    st.dataframe(df_y.reset_index(drop=True), use_container_width=True, height=420)
+    st.dataframe(df_y.reset_index(drop=True), width="stretch", height=420)
 
 
