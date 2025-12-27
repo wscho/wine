@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# -*- coding: utf-8 -*-
 import os
 from dataclasses import dataclass
 from pathlib import Path
