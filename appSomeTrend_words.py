@@ -16,7 +16,7 @@ import matplotlib.font_manager as fm
 from PIL import Image, ImageChops
 from wordcloud import WordCloud
 
-from korean_font import configure_korean_font
+from korean_font import configure_korean_font, korean_font_help_markdown, require_korean_font_file, korean_font_debug_line
 from web_fonts import inject_noto_sans_kr
 
 
@@ -212,7 +212,12 @@ with st.sidebar:
     st.header("데이터 소스")
     sheet_url = st.text_input("구글시트 URL", value=DEFAULT_SHEET_URL)
     st.caption("공개/공유 설정이 '링크가 있는 모든 사용자 보기 가능'이어야 합니다.")
-    st.caption(f"한글 폰트: {_CHOSEN_FONT or '감지 실패(깨짐 시 맑은 고딕/나눔고딕 설치 필요)'}")
+    if _KOREAN_FONT_PATH:
+        st.caption(f"한글 폰트: {_CHOSEN_FONT} (파일 사용)")
+        st.caption(korean_font_debug_line(_font_info))
+    else:
+        st.warning("한글 폰트 파일을 찾지 못했습니다. 배포 환경에서는 워드클라우드 한글이 깨질 수 있습니다.")
+        st.caption(korean_font_help_markdown())
     st.divider()
 
     st.header("워드클라우드 설정")
@@ -253,7 +258,11 @@ else:
     df_y = df[df["년도"] == year_int].copy()
     title_year = f"{year_int}년"
 
-font_path = pick_bold_font_path()
+font_path = require_korean_font_file(_font_info)
+if not font_path:
+    st.error("한글 폰트 파일이 없어 워드클라우드를 생성할 수 없습니다.")
+    st.markdown(korean_font_help_markdown())
+    st.stop()
 
 # 감성별 색상(긍정은 더 연하게)
 colors = {"긍정": "#9BE7A5", "부정": "#FF6B6B", "중립": "#B0B0B0"}

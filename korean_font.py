@@ -114,3 +114,35 @@ def configure_korean_font() -> KoreanFontInfo:
     return KoreanFontInfo(name=None, regular_path=None, bold_path=None, prop=None)
 
 
+def korean_font_help_markdown() -> str:
+    """
+    배포(특히 Streamlit Community Cloud)에서 한글이 □□□로 깨질 때 안내 메시지.
+    """
+    return (
+        "배포 환경(리눅스)에는 기본 한글 폰트가 없어서, `matplotlib`/`wordcloud` 이미지에서 한글이 □□□로 깨질 수 있습니다.\n\n"
+        "- **해결(권장)**: 레포에 한글 TTF 폰트를 포함하세요.\n"
+        "  - `assets/fonts/NotoSansKR-Regular.ttf`\n"
+        "  - `assets/fonts/NotoSansKR-Bold.ttf` (선택)\n"
+        "  - 또는 `assets/fonts/NanumGothic.ttf` / `assets/fonts/NanumGothicBold.ttf`\n\n"
+        "- **자동 다운로드**: `python scripts/download_fonts.py`\n\n"
+        "- **참고**: Streamlit Community Cloud 배포: `https://share.streamlit.io/`\n"
+    )
+
+
+def require_korean_font_file(info: KoreanFontInfo) -> str:
+    """
+    WordCloud/Matplotlib 이미지 생성에 사용할 '실제 폰트 파일 경로'가 반드시 필요할 때 사용.
+    """
+    return info.bold_path or info.regular_path or ""
+
+
+def korean_font_debug_line(info: KoreanFontInfo) -> str:
+    """
+    화면/로그에 출력할 폰트 디버그 문자열.
+    """
+    name = info.name or "None"
+    reg = info.regular_path or "None"
+    bold = info.bold_path or "None"
+    return f"한글 폰트 디버그: name={name} | regular={reg} | bold={bold}"
+
+

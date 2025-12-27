@@ -17,7 +17,7 @@ import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
 import networkx as nx
 
-from korean_font import configure_korean_font
+from korean_font import configure_korean_font, korean_font_help_markdown, korean_font_debug_line
 from web_fonts import inject_noto_sans_kr
 
 
@@ -30,6 +30,7 @@ _KOREAN_FONT_PROP: Optional[fm.FontProperties] = None
 _font_info = configure_korean_font()
 _CHOSEN_FONT = _font_info.name
 _KOREAN_FONT_PROP = _font_info.prop
+_KOREAN_FONT_FILE = _font_info.regular_path or _font_info.bold_path
 
 
 # =============================
@@ -129,6 +130,11 @@ st.set_page_config(page_title="썸트렌드 연관성 분석", layout="wide")
 inject_noto_sans_kr()
 st.title("🕸️ 썸트렌드 연관성 분석")
 
+if not _KOREAN_FONT_PROP:
+    st.error("한글 폰트를 찾지 못했습니다. 배포 환경에서는 노드 라벨 한글이 깨질 수 있어 실행을 중단합니다.")
+    st.markdown(korean_font_help_markdown())
+    st.stop()
+
 with st.sidebar:
     st.header("데이터 소스")
     sheet_url = st.text_input("구글시트 URL", value=DEFAULT_SHEET_URL)
@@ -140,7 +146,11 @@ with st.sidebar:
     k_val = st.slider("노드 간격(k)", 0.8, 4.0, 2.0, 0.1)
     iters = st.slider("레이아웃 반복(iterations)", 50, 600, 220, 10)
     node_mul = st.slider("노드 크기 배수", 0.5, 3.0, 1.2, 0.1)
-    st.caption(f"한글 폰트: {_CHOSEN_FONT or '감지 실패(깨짐 시 맑은 고딕/나눔고딕 설치 필요)'}")
+    if _KOREAN_FONT_FILE:
+        st.caption(f"한글 폰트: {_CHOSEN_FONT} (파일 사용)")
+        st.caption(korean_font_debug_line(_font_info))
+    else:
+        st.caption(f"한글 폰트: {_CHOSEN_FONT or '감지 실패'}")
 
     if st.button("데이터 새로고침(캐시 삭제)"):
         st.cache_data.clear()
