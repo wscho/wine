@@ -14,7 +14,7 @@ from web_fonts import inject_noto_sans_kr
 from st_compat import dataframe_full
 
 
-DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Me5u7H0U-w6mwJP0ZWAOeBsOta_bOUSHwAdvPwEdzJc/edit?usp=sharing"
+DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/17hasc7WeidkBTDs6a1xyqPZ48S3F8l83/edit?usp=sharing&ouid=112643056517438341912&rtpof=true&sd=true"
 
 
 def _extract_spreadsheet_id(url: str) -> str:

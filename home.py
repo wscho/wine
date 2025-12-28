@@ -30,7 +30,10 @@ with st.sidebar:
     news_sheet_url = st.text_input("관련뉴스 시트 URL", value="https://docs.google.com/spreadsheets/d/1JsksLQuGqXuL7RGacqZyEmHxCrTIMHOVwlAIM32HUAo/edit?usp=sharing")
     news_query = st.text_input("뉴스 검색(제목)", value="")
     max_items = st.slider("표시 개수", 5, 100, 20, 5)
+    if "news_refresh_nonce" not in st.session_state:
+        st.session_state["news_refresh_nonce"] = 0
     if button_full("관련뉴스 새로고침(캐시 삭제)"):
+        st.session_state["news_refresh_nonce"] += 1
         st.cache_data.clear()
 
 if menu == "홈":
@@ -127,12 +130,15 @@ def _download_with_retry(url: str, timeout_s: int = 30, retries: int = 3, backof
     raise RuntimeError(f"네트워크 요청 실패: {last_exc}")
 
 
-@st.cache_data(show_spinner=False)
-def _fetch_news_sheet(sheet_url: str) -> pd.DataFrame:
+@st.cache_data(show_spinner=False, ttl=300)
+def _fetch_news_sheet(sheet_url: str, nonce: int) -> pd.DataFrame:
     sid = _extract_spreadsheet_id(sheet_url)
-    resp = _download_with_retry(_xlsx_export_url(sid))
+    # cache bust: 구글/프록시 캐시로 인해 최신 행이 즉시 반영되지 않는 경우가 있어 nonce를 URL에 포함
+    url = _xlsx_export_url(sid) + f"&cachebust={int(nonce)}"
+    resp = _download_with_retry(url)
     with BytesIO(resp.content) as bio:
-        return pd.read_excel(bio)
+        # 중요: 시트에 "헤더 행이 없는" 경우가 많아 header=None으로 읽어 첫 행이 누락되지 않게 한다.
+        return pd.read_excel(bio, header=None)
 
 
 def _normalize_news(df: pd.DataFrame) -> pd.DataFrame:
@@ -145,10 +151,21 @@ def _normalize_news(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame(columns=["제목", "URL"])
 
-    cols = list(df.columns)
-    a = cols[0]
-    b = cols[1] if len(cols) > 1 else cols[0]
-    out = df[[a, b]].copy()
+    # header=None 로 읽은 데이터 기준: 0/1열을 제목/URL로 사용.
+    # 첫 행이 헤더(예: "제목","URL")인 경우 자동으로 1행부터 사용.
+    out = df.copy()
+    if out.shape[1] < 2:
+        return pd.DataFrame(columns=["제목", "URL"])
+
+    first_a = str(out.iloc[0, 0]).strip().lower()
+    first_b = str(out.iloc[0, 1]).strip().lower()
+    header_like = (first_a in {"제목", "title"} and first_b in {"url", "링크", "link"})
+
+    if header_like:
+        out = out.iloc[1:, [0, 1]].copy()
+    else:
+        out = out.iloc[:, [0, 1]].copy()
+
     out.columns = ["제목", "URL"]
 
     out["제목"] = out["제목"].astype(str).str.strip()
@@ -162,11 +179,28 @@ def _normalize_news(df: pd.DataFrame) -> pd.DataFrame:
 st.subheader("📰 관련뉴스")
 
 try:
-    news_raw = _fetch_news_sheet(news_sheet_url)
+    news_raw = _fetch_news_sheet(news_sheet_url, int(st.session_state.get("news_refresh_nonce", 0)))
     news_df = _normalize_news(news_raw)
 except Exception as e:
     st.error(f"관련뉴스 시트를 불러오지 못했습니다: {e}")
     st.stop()
+
+with st.expander("디버그: 시트 원본/필터 상태 확인"):
+    st.caption(f"원본 행 수: {len(news_raw) if news_raw is not None else 0:,} · 정규화 후: {len(news_df):,}")
+    # URL이 필터로 걸러지는 케이스가 많아, 유효하지 않은 URL 예시를 보여줌
+    if news_raw is not None and not news_raw.empty:
+        cols = list(news_raw.columns)
+        a = cols[0]
+        b = cols[1] if len(cols) > 1 else cols[0]
+        tmp = news_raw[[a, b]].copy()
+        tmp.columns = ["제목", "URL"]
+        tmp["제목"] = tmp["제목"].astype(str).str.strip()
+        tmp["URL"] = tmp["URL"].astype(str).str.strip()
+        bad = tmp[(tmp["제목"] != "") & (tmp["제목"].str.lower() != "nan") & (~tmp["URL"].str.startswith(("http://", "https://")))].head(10)
+        if len(bad):
+            st.warning("URL이 http(s):// 로 시작하지 않으면 필터링되어 표시되지 않습니다. (예시)")
+            st.dataframe(bad, use_container_width=True, height=240)
+        st.dataframe(tmp.head(20), use_container_width=True, height=240)
 
 if news_query.strip():
     q = news_query.strip()
