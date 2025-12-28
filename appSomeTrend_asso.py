@@ -21,6 +21,7 @@ import networkx as nx
 
 from korean_font import configure_korean_font, korean_font_help_markdown, korean_font_debug_line
 from web_fonts import inject_noto_sans_kr
+from st_compat import image_full, dataframe_full
 
 
 # =============================
@@ -316,7 +317,7 @@ except Exception:
     with BytesIO() as bio:
         fig.savefig(bio, format="png", dpi=FIG_DPI, facecolor="white", bbox_inches="tight", pad_inches=0.2)
         bio.seek(0)
-        st.image(bio.getvalue(), use_container_width=True)
+        image_full(bio.getvalue())
 finally:
     try:
         mpl.rcParams["svg.fonttype"] = _orig_svg_fonttype
@@ -325,6 +326,6 @@ finally:
 plt.close(fig)
 
 with st.expander("원본/필터 데이터 보기"):
-    st.dataframe(df_view.reset_index(drop=True), use_container_width=True, height=380)
+    dataframe_full(df_view.reset_index(drop=True), height=380)
 
 

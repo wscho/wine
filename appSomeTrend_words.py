@@ -18,6 +18,7 @@ from wordcloud import WordCloud
 
 from korean_font import configure_korean_font, korean_font_help_markdown, require_korean_font_file, korean_font_debug_line
 from web_fonts import inject_noto_sans_kr
+from st_compat import image_full, dataframe_full
 
 
 # =============================
@@ -283,9 +284,9 @@ for sent in sent_order:
     )
     st.subheader(f"{title_year} {sent} ({len(freq)}개)")
     # 세로 배치 + 크게 보이도록 컨테이너 폭에 맞춰 표시
-    st.image(img, use_container_width=True)
+    image_full(img)
 
 with st.expander("데이터 보기(필터 적용 후)"):
-    st.dataframe(df_y.reset_index(drop=True), use_container_width=True, height=420)
+    dataframe_full(df_y.reset_index(drop=True), height=420)
 
 

@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 
 from web_fonts import inject_noto_sans_kr
+from st_compat import button_full
 
 
 st.set_page_config(page_title="영동와인 빅데이터 홈", layout="wide")
@@ -29,7 +30,7 @@ with st.sidebar:
     news_sheet_url = st.text_input("관련뉴스 시트 URL", value="https://docs.google.com/spreadsheets/d/1JsksLQuGqXuL7RGacqZyEmHxCrTIMHOVwlAIM32HUAo/edit?usp=sharing")
     news_query = st.text_input("뉴스 검색(제목)", value="")
     max_items = st.slider("표시 개수", 5, 100, 20, 5)
-    if st.button("관련뉴스 새로고침(캐시 삭제)", use_container_width=True):
+    if button_full("관련뉴스 새로고침(캐시 삭제)"):
         st.cache_data.clear()
 
 if menu == "홈":
@@ -47,29 +48,34 @@ if menu == "홈":
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📈 네이버 DataLab 언급량 트렌드", use_container_width=True):
+        if button_full("📈 네이버 DataLab 언급량 트렌드"):
             try:
                 st.switch_page("pages/01_naver_datalab_trend.py")
             except Exception:
                 st.info("좌측 사이드바에서 '네이버 DataLab 언급량 트렌드' 페이지를 선택해 주세요.")
-        if st.button("📊 네이버 DataLab 비교 트렌드(국내/해외/국가별)", use_container_width=True):
+        if button_full("📊 네이버 DataLab 비교 트렌드(국내/해외/국가별)"):
             try:
                 st.switch_page("pages/01_naver_datalab_comp.py")
             except Exception:
                 st.info("좌측 사이드바에서 '네이버 DataLab 비교 트렌드' 페이지를 선택해 주세요.")
-        if st.button("📈 썸트렌드 언급량 트렌드(빈도수)", use_container_width=True):
+        if button_full("🌍 국가별 와인 리뷰 분석"):
+            try:
+                st.switch_page("pages/05_global_wine_reviews.py")
+            except Exception:
+                st.info("좌측 사이드바에서 '국가별 와인 리뷰 분석' 페이지를 선택해 주세요.")
+        if button_full("📈 썸트렌드 언급량 트렌드(빈도수)"):
             try:
                 st.switch_page("pages/02_sometrend_freq_trend.py")
             except Exception:
                 st.info("좌측 사이드바에서 '썸트렌드 언급량 트렌드(빈도수)' 페이지를 선택해 주세요.")
 
     with col2:
-        if st.button("🕸️ 썸트렌드 연관성 분석", use_container_width=True):
+        if button_full("🕸️ 썸트렌드 연관성 분석"):
             try:
                 st.switch_page("pages/03_sometrend_association.py")
             except Exception:
                 st.info("좌측 사이드바에서 '썸트렌드 연관성 분석' 페이지를 선택해 주세요.")
-        if st.button("☁️ 썸트렌드 긍부정 워드클라우드", use_container_width=True):
+        if button_full("☁️ 썸트렌드 긍부정 워드클라우드"):
             try:
                 st.switch_page("pages/04_sometrend_sentiment_wordcloud.py")
             except Exception:
